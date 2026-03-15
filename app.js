@@ -12,7 +12,7 @@ var usersRouter = require('./routes/users.js');
 var productsRouter = require('./routes/products.js');
 var categoriesRouter = require('./routes/categories.js');
 var rolesRouter = require('./routes/roles.js');  // Thêm roles router
-
+var authRouter = require("./routes/auth");
 var app = express();
 
 app.set('views', path.join(__dirname, 'views'));
@@ -30,7 +30,7 @@ app.use('/api/v1/products', productsRouter);
 app.use('/api/v1/categories', categoriesRouter);
 app.use('/api/v1/roles', rolesRouter);  // Thêm route cho roles
 app.use('/v1/roles', rolesRouter);
-
+app.use("/auth", authRouter);
 mongoose.connect(process.env.MONGO_URI);
 
 mongoose.connection.on('connected', function () {

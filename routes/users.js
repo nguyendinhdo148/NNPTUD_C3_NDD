@@ -1,10 +1,204 @@
 var express = require('express');
 var router = express.Router();
+
 let userModel = require('../schemas/users');
 let roleModel = require('../schemas/roles');
-const bcrypt = require('bcrypt');
 
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const fs = require('fs');
+
+// đọc key RS256
+const privateKey = fs.readFileSync('./private.key');
+const publicKey = fs.readFileSync('./public.key');
+
+
+// =======================
+// CHECK LOGIN
+// =======================
+
+function CheckLogin(req, res, next) {
+
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return res.status(401).json({
+            message: "No token provided"
+        });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    try {
+
+        const decoded = jwt.verify(token, publicKey, {
+            algorithms: ["RS256"]
+        });
+
+        req.user = decoded;
+
+        next();
+
+    } catch (error) {
+
+        return res.status(401).json({
+            message: "Invalid token"
+        });
+
+    }
+}
+
+
+// =======================
+// LOGIN
+// =======================
+
+router.post('/login', async function(req,res){
+
+    try{
+
+        let {username,password} = req.body;
+
+        let user = await userModel.findOne({
+            username:username,
+            isDeleted:false
+        });
+
+        if(!user){
+            return res.status(404).json({
+                message:"User not found"
+            });
+        }
+
+        const isMatch = password === user.password;
+
+        if(!isMatch){
+            return res.status(400).json({
+                message:"Wrong password"
+            });
+        }
+
+        const token = jwt.sign(
+            { id:user._id },
+            privateKey,
+            {
+                algorithm:"RS256",
+                expiresIn:"1h"
+            }
+        );
+
+        res.json({
+            message:"Login success",
+            token:token
+        });
+
+    }catch(err){
+
+        res.status(500).json({
+            error:err.message
+        });
+
+    }
+
+});
+
+
+// =======================
+// GET ME
+// =======================
+
+router.get('/me',CheckLogin,async function(req,res){
+
+    try{
+
+        let user = await userModel
+        .findById(req.user.id)
+        .populate("role")
+        .select("-password");
+
+        if(!user){
+            return res.status(404).json({
+                message:"User not found"
+            });
+        }
+
+        res.json(user);
+
+    }catch(err){
+
+        res.status(500).json({
+            error:err.message
+        });
+
+    }
+
+});
+
+
+// =======================
+// CHANGE PASSWORD
+// =======================
+
+router.post('/change-password',CheckLogin,async function(req,res){
+
+    try{
+
+        let {oldPassword,newPassword} = req.body;
+
+        if(!oldPassword || !newPassword){
+            return res.status(400).json({
+                message:"Missing password"
+            });
+        }
+
+        if(newPassword.length < 6){
+            return res.status(400).json({
+                message:"New password must be at least 6 characters"
+            });
+        }
+
+        let user = await userModel.findById(req.user.id);
+
+        if(!user){
+            return res.status(404).json({
+                message:"User not found"
+            });
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword,user.password);
+
+        if(!isMatch){
+            return res.status(400).json({
+                message:"Old password incorrect"
+            });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword,salt);
+
+        user.password = hashedPassword;
+
+        await user.save();
+
+        res.json({
+            message:"Password changed successfully"
+        });
+
+    }catch(err){
+
+        res.status(500).json({
+            error:err.message
+        });
+
+    }
+
+});
+
+
+// =======================
 // GET all users
+// =======================
+
 router.get('/', async function(req, res, next) {
     try {
 
@@ -20,7 +214,10 @@ router.get('/', async function(req, res, next) {
 });
 
 
+// =======================
 // GET user by id
+// =======================
+
 router.get('/:id', async function(req, res, next) {
     try {
 
@@ -41,13 +238,15 @@ router.get('/:id', async function(req, res, next) {
 });
 
 
+// =======================
 // CREATE user
+// =======================
+
 router.post('/', async function(req, res, next) {
     try {
 
         let { username, password, email, fullName, role } = req.body;
 
-        // kiểm tra trùng username/email
         let existedUser = await userModel.findOne({
             $or: [
                 { username: username },
@@ -62,7 +261,6 @@ router.post('/', async function(req, res, next) {
             });
         }
 
-        // kiểm tra role tồn tại
         let roleData = await roleModel.findOne({
             _id: role,
             isDeleted: false
@@ -74,7 +272,6 @@ router.post('/', async function(req, res, next) {
             });
         }
 
-        // hash password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -103,7 +300,10 @@ router.post('/', async function(req, res, next) {
 });
 
 
+// =======================
 // UPDATE user
+// =======================
+
 router.put('/:id', async function(req, res, next) {
     try {
 
@@ -148,7 +348,10 @@ router.put('/:id', async function(req, res, next) {
 });
 
 
-// DELETE user (soft delete)
+// =======================
+// DELETE user
+// =======================
+
 router.delete('/:id', async function(req, res, next) {
     try {
 
@@ -174,7 +377,10 @@ router.delete('/:id', async function(req, res, next) {
 });
 
 
+// =======================
 // ENABLE user
+// =======================
+
 router.post('/enable', async function(req, res, next) {
     try {
 
@@ -210,7 +416,10 @@ router.post('/enable', async function(req, res, next) {
 });
 
 
+// =======================
 // DISABLE user
+// =======================
+
 router.post('/disable', async function(req, res, next) {
     try {
 
