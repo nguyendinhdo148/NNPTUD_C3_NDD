@@ -139,21 +139,23 @@ router.get('/me',CheckLogin,async function(req,res){
 // CHANGE PASSWORD
 // =======================
 
-router.post('/change-password',CheckLogin,async function(req,res){
+router.post('/change-password', CheckLogin, async function(req,res){
 
     try{
 
-        let {oldPassword,newPassword} = req.body;
+        let { oldPassword, newPassword } = req.body;
 
+        // kiểm tra thiếu dữ liệu
         if(!oldPassword || !newPassword){
             return res.status(400).json({
-                message:"Missing password"
+                message: "Missing oldPassword or newPassword"
             });
         }
 
+        // validate new password
         if(newPassword.length < 6){
             return res.status(400).json({
-                message:"New password must be at least 6 characters"
+                message: "New password must be at least 6 characters"
             });
         }
 
@@ -165,7 +167,8 @@ router.post('/change-password',CheckLogin,async function(req,res){
             });
         }
 
-        const isMatch = await bcrypt.compare(oldPassword,user.password);
+        // kiểm tra mật khẩu cũ
+        const isMatch = oldPassword === user.password;
 
         if(!isMatch){
             return res.status(400).json({
@@ -173,8 +176,9 @@ router.post('/change-password',CheckLogin,async function(req,res){
             });
         }
 
+        // hash password mới
         const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword,salt);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
 
         user.password = hashedPassword;
 
