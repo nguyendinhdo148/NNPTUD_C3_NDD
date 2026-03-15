@@ -1,4 +1,3 @@
-
 require('dotenv').config();
 
 var createError = require('http-errors');
@@ -12,6 +11,7 @@ var indexRouter = require('./routes/index.js');
 var usersRouter = require('./routes/users.js');
 var productsRouter = require('./routes/products.js');
 var categoriesRouter = require('./routes/categories.js');
+var rolesRouter = require('./routes/roles.js');  // Thêm roles router
 
 var app = express();
 
@@ -28,6 +28,8 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/api/v1/products', productsRouter);
 app.use('/api/v1/categories', categoriesRouter);
+app.use('/api/v1/roles', rolesRouter);  // Thêm route cho roles
+app.use('/v1/roles', rolesRouter);
 
 mongoose.connect(process.env.MONGO_URI);
 
