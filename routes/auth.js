@@ -1,149 +1,115 @@
 var express = require("express");
 var router = express.Router();
 
-let userController = require('../controllers/users');
-const jwt = require("jsonwebtoken");
+let userController = require("../controllers/users");
 
-const SECRET_KEY = "mysecretkey";
+let {
+  RegisterValidator,
+  validatedResult,
+  ChangePasswordValidator
+} = require("../utils/validator");
 
-// ======================
+let { CheckLogin } = require("../utils/authHandler");
+
+
 // LOGIN
-// ======================
-router.post('/login', async function (req, res, next) {
+router.post("/login", async function (req, res) {
+  try {
 
-    try {
+    let { username, password } = req.body;
 
-        let { username, password } = req.body;
+    let result = await userController.QueryLogin(username, password);
 
-        let user = await userController.QueryLogin(username, password);
-
-        if (!user) {
-            return res.status(404).json({
-                message: "Thong tin dang nhap khong dung"
-            });
-        }
-
-        // tạo token
-        const token = jwt.sign(
-            { id: user._id, username: user.username },
-            SECRET_KEY,
-            { expiresIn: "1h" }
-        );
-
-        res.json({
-            message: "Login success",
-            token: token,
-            user: user
-        });
-
-    } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+    if (!result) {
+      return res.status(404).send("thong tin dang nhap khong dung");
     }
 
+    res.cookie("TOKEN_NNPTUD_C3", result, {
+      maxAge: 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: false
+    });
+
+    res.send(result);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 
-// ======================
 // REGISTER
-// ======================
-router.post('/register', async function (req, res, next) {
+router.post(
+  "/register",
+  RegisterValidator,
+  validatedResult,
+  async function (req, res) {
 
     try {
 
-        let { username, password, email } = req.body;
+      let { username, password, email } = req.body;
 
-        let newUser = await userController.CreateAnUser(
-            username,
-            password,
-            email,
-            '69b6231b3de61addb401ea26'
-        );
+      let newUser = await userController.CreateAnUser(
+        username,
+        password,
+        email,
+        "69b6231b3de61addb401ea26"
+      );
 
-        res.json(newUser);
+      res.send(newUser);
 
     } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+      res.status(500).json({ error: error.message });
     }
+  }
+);
 
-});
 
-
-// ======================
 // GET ME
-// ======================
-router.get('/me', async function (req, res, next) {
-
-    try {
-
-        let { username } = req.query;
-
-        if (!username) {
-            return res.status(400).json({
-                message: "Please provide username"
-            });
-        }
-
-        let user = await userController.GetUserByUsername(username);
-
-        if (!user) {
-            return res.status(404).json({
-                message: "User not found"
-            });
-        }
-
-        res.json(user);
-
-    } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
-    }
-
+router.get("/me", CheckLogin, function (req, res) {
+  res.send(req.user);
 });
 
 
-// ======================
 // CHANGE PASSWORD
-// ======================
-router.post('/change-password', async function (req, res, next) {
+router.post(
+  "/changepassword",
+  CheckLogin,
+  ChangePasswordValidator,
+  validatedResult,
+  async function (req, res) {
 
     try {
 
-        let { username, oldPassword, newPassword } = req.body;
+      let { oldpassword, newpassword } = req.body;
 
-        let result = await userController.ChangePassword(
-            username,
-            oldPassword,
-            newPassword
-        );
+      let result = await userController.ChangePassword(
+        req.user,
+        oldpassword,
+        newpassword
+      );
 
-        if (!result) {
-            return res.status(400).json({
-                message: "Old password incorrect"
-            });
-        }
+      if (!result) {
+        return res.status(400).send("Old password incorrect");
+      }
 
-        res.json({
-            message: "Password changed successfully"
-        });
+      res.send("doi thanh cong");
 
     } catch (error) {
-
-        res.status(500).json({
-            error: error.message
-        });
-
+      res.status(500).json({ error: error.message });
     }
+  }
+);
+
+
+// LOGOUT
+router.post("/logout", CheckLogin, function (req, res) {
+
+  res.cookie("TOKEN_NNPTUD_C3", null, {
+    maxAge: 0
+  });
+
+  res.send("logout");
 
 });
 
