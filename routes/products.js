@@ -2,7 +2,9 @@ var express = require("express");
 var router = express.Router();
 let productModel = require("../schemas/products");
 const { default: slugify } = require("slugify");
+let inventoryModel = require("../schemas/inventory");
 
+// CREATE product
 // CREATE product
 router.post("/", async function (req, res, next) {
   try {
@@ -10,16 +12,24 @@ router.post("/", async function (req, res, next) {
       title: req.body.title,
       slug: slugify(req.body.title, {
         replacement: "-",
-        remove: undefined,
         lower: true,
-        strict: false,
       }),
       description: req.body.description,
       price: req.body.price,
       images: req.body.image,
       category: req.body.category,
     });
+
     const saved = await product.save();
+
+    // 👉 TẠO INVENTORY TƯƠNG ỨNG
+    await inventoryModel.create({
+      product: saved._id,
+      stock: 0,
+      reserved: 0,
+      soldCount: 0,
+    });
+
     res.status(201).json(saved);
   } catch (err) {
     res.status(400).json({ error: err.message });
