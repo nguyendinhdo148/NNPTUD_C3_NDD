@@ -33,7 +33,7 @@ async function sendBulkEmails() {
             // 3. Chờ 4 giây trước khi gửi người tiếp theo
             if (i < totalUsers) {
                 console.log("⏳ Đang chờ 4 giây để Mailtrap không chặn...");
-                await delay(4000); 
+                await delay(10000); 
             }
         }
         
