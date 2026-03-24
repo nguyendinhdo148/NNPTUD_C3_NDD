@@ -1,27 +1,36 @@
 const nodemailer = require("nodemailer");
+const { MailtrapTransport } = require("mailtrap");
 
-const transporter = nodemailer.createTransport({
-    host: "sandbox.smtp.mailtrap.io",
-    port: 2525, 
-    auth: {
-        // Thay bằng User và Pass thật của bạn trên Mailtrap
-        user: "c26aed7e165e3d", 
-        pass: "c3e293b5e5fdd0", // Đảm bảo đây là mật khẩu chính xác đã hiện ra hết (không có dấu ****)
-    },
-});
+// Token của bạn
+const TOKEN = "d41a01753896770f93a5af2badf9fca6";
+
+// Cấu hình theo đúng chuẩn code mẫu bạn vừa tìm được
+const transporter = nodemailer.createTransport(
+    MailtrapTransport({
+        token: TOKEN,
+        sandbox: true,
+        testInboxId: 4485325, // Chính xác là ID hộp thư của bạn đây rồi!
+    })
+);
 
 module.exports = {
     sendMail: async function (to, password) {
-        await transporter.sendMail({
-            from: 'admin@haha.com',
-            to: to,
-            subject: "Tài khoản của bạn",
-            text: `Password của bạn là: ${password}`,
-            html: `
-                <h3>Chào bạn</h3>
-                <p>Tài khoản đã được tạo</p>
-                <p><b>Password:</b> ${password}</p>
-            `,
-        });
+        try {
+            await transporter.sendMail({
+                from: { address: "admin@haha.com", name: "System Admin" },
+                to: to,
+                subject: "Tài khoản của bạn",
+                text: `Password của bạn là: ${password}`,
+                html: `
+                    <h3>Chào bạn</h3>
+                    <p>Tài khoản đã được tạo</p>
+                    <p><b>Password:</b> ${password}</p>
+                `,
+                category: "User Import",
+            });
+        } catch (error) {
+            console.error(`❌ Lỗi khi gửi mail tới ${to}:`, error);
+            throw error;
+        }
     }
 }
