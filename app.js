@@ -33,6 +33,7 @@ app.use('/api/v1/roles', rolesRouter);  // Thêm route cho roles
 app.use('/v1/roles', rolesRouter);
 app.use("/auth", authRouter);
 app.use("/api/v1/inventory", inventoryRouter);
+app.use('/api/v1/upload', require('./routes/upload'));
 mongoose.connect(process.env.MONGO_URI);
 
 mongoose.connection.on('connected', function () {

@@ -8,16 +8,34 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cookie-parser": "~1.4.4",
+    "csv-parser": "^3.2.0",
     "debug": "~2.6.9",
     "dotenv": "^17.3.1",
     "ejs": "~2.6.1",
+    "exceljs": "^4.4.0",
     "express": "~4.16.1",
     "express-validator": "^7.3.1",
     "http-errors": "~1.6.3",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.3",
     "morgan": "~1.9.1",
+    "multer": "^2.1.1",
+    "nodemailer": "^8.0.3",
     "nodemon": "^3.1.14",
-    "slugify": "^1.6.6"
-  }
+    "slugify": "^1.6.6",
+    "xlsx": "^0.18.5"
+  },
+  "description": "",
+  "main": "app.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nguyendinhdo148/NNPTUD_C3_NDD.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nguyendinhdo148/NNPTUD_C3_NDD/issues"
+  },
+  "homepage": "https://github.com/nguyendinhdo148/NNPTUD_C3_NDD#readme"
 }
