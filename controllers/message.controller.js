@@ -75,59 +75,37 @@ exports.sendMessage = async (req, res) => {
 // ==============================
 exports.getLastMessages = async (req, res) => {
   try {
-    const currentUserId = new mongoose.Types.ObjectId(req.user._id);
+    const currentUserId = req.user._id;
 
-    const messages = await Message.aggregate([
-      {
-        $match: {
-          $or: [{ from: currentUserId }, { to: currentUserId }],
-          isDeleted: false,
-        },
-      },
-      {
-        $addFields: {
-          user: {
-            $cond: [
-              { $eq: ["$from", currentUserId] },
-              "$to",
-              "$from",
-            ],
-          },
-        },
-      },
-      { $sort: { createdAt: -1 } },
-      {
-        $group: {
-          _id: "$user",
-          lastMessage: { $first: "$$ROOT" },
-        },
-      },
-      { $replaceRoot: { newRoot: "$lastMessage" } },
+    // 1. Lấy tất cả message liên quan
+    const messages = await Message.find({
+      $or: [{ from: currentUserId }, { to: currentUserId }],
+      isDeleted: false,
+    })
+      .sort({ createdAt: -1 }) // mới nhất lên đầu
+      .populate("from")
+      .populate("to");
 
-      {
-        $lookup: {
-          from: "users",
-          localField: "from",
-          foreignField: "_id",
-          as: "from",
-        },
-      },
-      { $unwind: "$from" },
+    // 2. Map để lưu last message theo từng user
+    const conversationMap = new Map();
 
-      {
-        $lookup: {
-          from: "users",
-          localField: "to",
-          foreignField: "_id",
-          as: "to",
-        },
-      },
-      { $unwind: "$to" },
+    for (let msg of messages) {
+      // xác định người còn lại
+      const otherUser =
+        msg.from._id.toString() === currentUserId.toString()
+          ? msg.to._id.toString()
+          : msg.from._id.toString();
 
-      { $sort: { createdAt: -1 } },
-    ]);
+      // nếu chưa có thì lấy (vì đã sort rồi nên cái đầu là mới nhất)
+      if (!conversationMap.has(otherUser)) {
+        conversationMap.set(otherUser, msg);
+      }
+    }
 
-    res.status(200).json(messages);
+    // 3. convert ra array
+    const result = Array.from(conversationMap.values());
+
+    res.status(200).json(result);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
