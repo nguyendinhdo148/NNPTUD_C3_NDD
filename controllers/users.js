@@ -25,7 +25,7 @@ module.exports = {
     GetUserById: async function (id) {
         try {
             return await userModel
-                .find({
+                .findOne({
                     isDeleted: false,
                     _id: id
                 })
@@ -48,9 +48,10 @@ module.exports = {
                 if (bcrypt.compareSync(password, user.password)) {
                     user.loginCount = 0;
                     await user.save();    
+                    const jwtSecret = process.env.JWT_SECRET || 'secret';
                     let token = jwt.sign({
                         id: user.id
-                    }, 'secret', {
+                    }, jwtSecret, {
                         expiresIn: '1d'
                     })
                     return token;

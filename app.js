@@ -6,7 +6,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var mongoose = require('mongoose');
-
+var messageRouter = require("./routes/message");
 var indexRouter = require('./routes/index.js');
 var usersRouter = require('./routes/users.js');
 var productsRouter = require('./routes/products.js');
@@ -34,6 +34,7 @@ app.use('/v1/roles', rolesRouter);
 app.use("/auth", authRouter);
 app.use("/api/v1/inventory", inventoryRouter);
 app.use('/api/v1/upload', require('./routes/upload'));
+app.use("/api/v1/messages", messageRouter);
 mongoose.connect(process.env.MONGO_URI);
 
 mongoose.connection.on('connected', function () {
